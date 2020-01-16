@@ -167,18 +167,6 @@ public class FileTransferBackground extends CordovaPlugin {
       LogMessage("upload with id "+payload.id + " is already being uploaded. ignoring re-upload request");
       return;
     }
-    try {
-      ArrayList<JSONObject> existingUploads = getUploadHistory();
-      for (JSONObject upload : existingUploads) {
-        String id = upload.getString("id");
-        if (id.equalsIgnoreCase(payload.id)) {
-          LogMessage("upload with id "+payload.id + " is already exists in upload queue. ignoring re-upload request");
-          return;
-        }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
 
     LogMessage("adding upload "+payload.id);
     this.createUploadInfoFile(payload.id, jsonPayload);
