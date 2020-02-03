@@ -80,90 +80,89 @@ NSString *const FormatTypeName[5] = {
 
 - (void)startUpload:(CDVInvokedUrlCommand*)command
 {
-    
-    
-    NSDictionary* payload = command.arguments[0];
-    NSString* uploadUrl  = payload[@"serverUrl"];
-    NSString* filePath  = payload[@"filePath"];
-    NSDictionary*  headers = payload[@"headers"];
-    NSDictionary* parameters = payload[@"parameters"];
-    NSString* fileId = payload[@"id"];
-    
-    if (uploadUrl == nil) {
-        return [self returnError:command withInfo:@{@"id":fileId, @"message": @"invalid url"}];
-    }
-    
-    if (filePath == nil) {
-        return [self returnError:command withInfo:@{@"id":fileId, @"message": @"file path is required"}];
-    }
-    
-    
-    if (![[NSFileManager defaultManager] fileExistsAtPath:filePath] ) {
-        return [self returnError:command withInfo:@{@"id":fileId, @"message": @"file does not exists"}];
-    }
-    
-    if (parameters == nil) {
-        parameters = @{};
-    }
-    
-    if (headers == nil) {
-        headers = @{};
-    }
-    
-    FileUploadManager* uploader = [FileUploadManager sharedInstance];
-    FileUpload* upload = [uploader getUploadById:fileId];
-    if (upload){
-        NSLog(@"Request to upload %@ has been ignored since it is already being uploaded or is present in upload list" ,fileId);
-        return;
-    }
-    
-    
-    NSURL * url = [NSURL URLWithString:uploadUrl];
-    
-    NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:url];
-    [request setHTTPMethod:@"POST"];
-    
-    
-    NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
-    
-    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-    [request setValue:contentType forHTTPHeaderField: @"Content-Type"];
-    
-    
-    NSData *body = [self createBodyWithBoundary:boundary parameters:parameters paths:@[filePath] fieldName:payload[@"fileKey"]];
-    
-    for (NSString *key in headers) {
-        [request setValue:[headers objectForKey:key] forHTTPHeaderField:key];
-    }
-    
-    
-    NSString *tmpFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:boundary];
-    if (![body writeToFile:tmpFilePath atomically:YES] ) {
+    [self.commandDelegate runInBackground:^{
+        NSDictionary* payload = command.arguments[0];
+        NSString* uploadUrl  = payload[@"serverUrl"];
+        NSString* filePath  = payload[@"filePath"];
+        NSDictionary*  headers = payload[@"headers"];
+        NSDictionary* parameters = payload[@"parameters"];
+        NSString* fileId = payload[@"id"];
         
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
-                                                      messageAsDictionary:@{
-                                                                            @"error" : @"Error writing temp file",
-                                                                            @"id" : fileId
-                                                                            }];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        return;
-    }
-    
-    
-    FileUpload* job=[uploader createUploadWithRequest:request fileId:fileId fileURL:[NSURL URLWithString:[NSString stringWithFormat:@"file:%@", tmpFilePath]]];
-    
-    if(job){
-        [job start];
-    }else{
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
-                                                      messageAsDictionary:@{
-                                                                            @"error" : @"Error adding upload",
-                                                                             @"id" : fileId
-                                                                            }];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }
-    
-    
+        if (uploadUrl == nil) {
+            return [self returnError:command withInfo:@{@"id":fileId, @"message": @"invalid url"}];
+        }
+        
+        if (filePath == nil) {
+            return [self returnError:command withInfo:@{@"id":fileId, @"message": @"file path is required"}];
+        }
+        
+        
+        if (![[NSFileManager defaultManager] fileExistsAtPath:filePath] ) {
+            return [self returnError:command withInfo:@{@"id":fileId, @"message": @"file does not exists"}];
+        }
+        
+        if (parameters == nil) {
+            parameters = @{};
+        }
+        
+        if (headers == nil) {
+            headers = @{};
+        }
+        
+        FileUploadManager* uploader = [FileUploadManager sharedInstance];
+        FileUpload* upload = [uploader getUploadById:fileId];
+        if (upload){
+            NSLog(@"Request to upload %@ has been ignored since it is already being uploaded or is present in upload list" ,fileId);
+            return;
+        }
+        
+        
+        NSURL * url = [NSURL URLWithString:uploadUrl];
+        
+        NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:url];
+        [request setHTTPMethod:@"POST"];
+        
+        
+        NSString *boundary = [NSString stringWithFormat:@"Boundary-%@", [[NSUUID UUID] UUIDString]];
+        
+        NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+        [request setValue:contentType forHTTPHeaderField: @"Content-Type"];
+        
+        
+        NSData *body = [self createBodyWithBoundary:boundary parameters:parameters paths:@[filePath] fieldName:payload[@"fileKey"]];
+        
+        for (NSString *key in headers) {
+            [request setValue:[headers objectForKey:key] forHTTPHeaderField:key];
+        }
+        
+        
+        NSString *tmpFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:boundary];
+        if (![body writeToFile:tmpFilePath atomically:YES] ) {
+            
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                        messageAsDictionary:@{
+                                                                                @"error" : @"Error writing temp file",
+                                                                                @"id" : fileId
+                                                                                }];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            return;
+        }
+        
+        
+        FileUpload* job=[uploader createUploadWithRequest:request fileId:fileId fileURL:[NSURL URLWithString:[NSString stringWithFormat:@"file:%@", tmpFilePath]]];
+        
+        if(job){
+            [job start];
+        }else{
+            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                        messageAsDictionary:@{
+                                                                                @"error" : @"Error adding upload",
+                                                                                @"id" : fileId
+                                                                                }];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }
+        
+    }];
 }
 
 - (void)removeUpload:(CDVInvokedUrlCommand*)command
