@@ -180,6 +180,17 @@ public class FileTransferBackground extends CordovaPlugin {
       e.printStackTrace();
     }
 
+    if (!new File(payload.filePath).exists()){
+      JSONObject errorObj = new JSONObject();
+      errorObj.put("id",  payload.id);
+      errorObj.put("message", "File not found: "+ payload.filePath);
+      PluginResult errorResult = new PluginResult(PluginResult.Status.ERROR, errorObj);
+      errorResult.setKeepCallback(true);
+      callbackContext.sendPluginResult(errorResult);
+      return;
+    }
+
+
     LogMessage("adding upload "+payload.id);
     this.createUploadInfoFile(payload.id, jsonPayload);
     if (NetworkMonitor.isConnected) {

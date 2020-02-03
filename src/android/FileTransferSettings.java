@@ -62,9 +62,6 @@ public class FileTransferSettings {
         }
       }
 
-      if (!new File(filePath).exists())
-        throw new IOException("File not found: " + filePath);
-
     } catch (Exception e) {
       throw e;
     }

@@ -99,7 +99,7 @@ NSString *const FormatTypeName[5] = {
     
     
     if (![[NSFileManager defaultManager] fileExistsAtPath:filePath] ) {
-        return [self returnError:command withInfo:@{@"id":fileId, @"message": @"file does not exists"}];
+        return [self returnError:command withInfo:@{@"id":fileId, @"message": [@"File not found: " stringByAppendingString:filePath]}];
     }
     
     if (parameters == nil) {
