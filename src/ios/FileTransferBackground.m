@@ -16,6 +16,11 @@
         }
 
         [FileUploader sharedInstance].delegate = self;
+
+        [self sendCallback:@{
+            @"state" : @"INITIALIZED"
+        }];
+
         //mark all old uploads as failed to be retried
         for (NSString* uploadId in [self getV1Uploads]){
             [self sendCallback:@{
@@ -25,6 +30,7 @@
                 @"errorCode" : @500
             }];
         }
+
 
         for (UploadEvent* event in [UploadEvent allEvents]){
             [self uploadManagerDidReceiveCallback: [event dataRepresentation]];

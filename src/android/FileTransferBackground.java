@@ -14,6 +14,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+
 public class FileTransferBackground extends CordovaPlugin implements ServiceConnection, ManagerService.IConnectedPlugin {
     private CallbackContext uploadCallback;
     private ManagerService managerService;
@@ -91,6 +93,10 @@ public class FileTransferBackground extends CordovaPlugin implements ServiceConn
             this.managerService = binder.getServiceInstance();
             this.managerService.setMainActivity(cordova.getActivity());
             this.managerService.setConnectedPlugin(this);
+
+            callback(new JSONObject(new HashMap() {{
+                put("state", "INITIALIZED");
+            }}));
         } catch (Exception e) {
             e.printStackTrace();
         }
