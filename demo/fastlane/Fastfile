@@ -1,0 +1,37 @@
+require 'time'
+
+default_platform :android
+
+platform :android do
+
+  desc "Demo App - Beta release"
+
+  lane :beta do |options|
+    return unless ENV['TRAVIS_PULL_REQUEST'] != 'false'
+
+    apk_file = "#{ENV['TRAVIS_PULL_REQUEST']}_#{Time.now.strftime("%Y-%m-%d-%H-%M-%S")}.apk"
+
+    sh "ionic cordova platform add android@8.1.0"
+    sh "ionic cordova build android --prod --release"
+    sh "jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore ../upload-demo.keystore -storepass upload_demo ../platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk upload_demo"
+    sh "zipalign -f -v 4 ../platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk ../platforms/android/app/build/outputs/apk/release/app-release.apk"
+    sh "cd .. && cp platforms/android/app/build/outputs/apk/release/app-release.apk #{apk_file}"
+
+    aws_s3(
+      access_key: ENV['S3_ACCESS_KEY'],
+      secret_access_key: ENV['S3_SECRET_ACCESS_KEY'],
+      bucket: ENV['S3_BUCKET'],
+      region: ENV['S3_REGION'],
+      acl: ENV['S3_ACL'],
+      app_directory: "cordova-plugin-background-upload-demo/android/pr/#{ENV['TRAVIS_PULL_REQUEST']}",
+      apk: apk_file
+    )
+
+    github_api(
+      api_token: ENV["GITHUB_TOKEN"],
+      http_method: 'POST',
+      path: "/repos/#{ENV['TRAVIS_PULL_REQUEST_SLUG']}/issues/#{ENV['TRAVIS_PULL_REQUEST']}/comments",
+      body: { body: "#{ENV['S3_APK_OUTPUT_PATH']}"},
+    )
+  end
+end

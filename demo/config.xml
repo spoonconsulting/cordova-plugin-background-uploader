@@ -99,6 +99,8 @@
     <plugin name="cordova-plugin-splashscreen" spec="5.0.2" />
     <plugin name="cordova-plugin-ionic-webview" spec="^4.0.0" />
     <plugin name="cordova-plugin-ionic-keyboard" spec="^2.0.5" />
-    <plugin name="cordova-plugin-background-upload" spec="https://github.com/spoonconsulting/cordova-plugin-background-upload.git#afnetworking-spx-demo" />
-    <engine name="android" spec="8.1.0" />
+    <plugin name="cordova-plugin-background-upload" spec="git+https://github.com/spoonconsulting/cordova-plugin-background-upload.git#afnetworking-spx-demo" />
+    <engine name="android" spec="^8.1.0" />
+    <plugin name="cordova-plugin-nativestorage" spec="^2.3.2" />
+    <plugin name="cordova-plugin-telerik-imagepicker" spec="2.3.3" />
 </widget>

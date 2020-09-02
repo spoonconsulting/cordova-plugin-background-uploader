@@ -2,7 +2,7 @@
 set -o nounset
 set -o errexit
 
-npm install -g cordova npx forever
+npm install -g cordova@9.0.0 npx@10.2.2 forever@3.0.0
 npm install
 
 # lint
@@ -15,7 +15,7 @@ mkdir ~/test_results
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
     gem install cocoapods
     pod repo update
-    npm install -g ios-sim ios-deploy
+    npm install -g ios-sim@9.0.0 ios-deploy@1.10.0
     npm run test:ios
 fi
 if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then

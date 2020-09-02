@@ -1,6 +1,13 @@
-import { Component, NgZone} from '@angular/core';
+import { Component, NgZone, ViewChild, ElementRef, OnInit} from '@angular/core';
 import { ImagePicker } from '@ionic-native/image-picker/ngx';
-import { Platform } from '@ionic/angular';
+import { WebView } from '@ionic-native/ionic-webview/ngx';
+import { NativeStorage } from '@ionic-native/native-storage/ngx';
+
+import { Platform, NavController } from '@ionic/angular';
+
+import { Media } from '../model/media';
+import { Options, DEFAULT as DEFAULT_OPTIONS } from '../model/options';
+import { EventsService } from '../services/events.service';
 
 declare var FileTransferManager: any;
 
@@ -10,125 +17,148 @@ declare var FileTransferManager: any;
   styleUrls: ['home.page.scss'],
 })
 
-export class HomePage {
+export class HomePage implements OnInit {
 
-  allMedia: Array < Media > = [];
+  allMedia: Array<Media> = [];
+  pendingMedia: Array<Media> = [];
+  logs: Array<String> = [];
   uploader: any;
-  win: any = window;
+  uploadOptions: Options = DEFAULT_OPTIONS; 
 
-  constructor(private platform: Platform, private _ngZone: NgZone, private imgPicker: ImagePicker) {
+  @ViewChild('logs_container', {read: ElementRef, static: true }) logsContainer: ElementRef;
+
+  constructor(
+    private platform: Platform, 
+    private _ngZone: NgZone, 
+    private events: EventsService,
+    private navController: NavController, 
+    private imgPicker: ImagePicker, 
+    private webView: WebView, 
+    private nativeStorage: NativeStorage) {
+
     this.platform.ready().then(() => {
-      let self = this;
 
-      self.uploader = FileTransferManager.init({
+      this.uploader = FileTransferManager.init({
         parallelUploadsLimit: 2,
         notificationTitle: 'Upload service',
         notificationContent: 'Background upload service running'
       }, event => {
-        console.log('EVENT');
-        var correspondingMedia = self.getMediaWithId(event.id);
-        if (!correspondingMedia) { return; }
+        const correspondingMedia = this.getMediaWithId(event.id);
+        if (!correspondingMedia) return;
 
-        if (event.state == 'UPLOADED') { 
-          console.log("upload: " + event.id + " has been completed successfully");
+        if (event.state == 'UPLOADED') {
+          this.log("Upload: " + event.id + " has been completed successfully");
           console.log(event.statusCode, event.serverResponse);
-          correspondingMedia.updateStatus("uploaded successfully");
+          correspondingMedia.updateStatus("Uploaded successfully");
         } else if (event.state == 'FAILED') {
           if (event.id) {
-            console.log("upload: " + event.id + " has failed");
+            this.log("Upload: " + event.id + " has failed");
             correspondingMedia.updateStatus("Error while uploading");
           } else {
             console.error("uploader caught an error: " + event.error);
           }
         } else if (event.state == 'UPLOADING') {
-          console.log("uploading: " + event.id + " progress: " + event.progress + "%");
-          correspondingMedia.updateStatus("uploading: " + event.progress + "%");
+          this.log("Uploading: " + event.id + " progress: " + event.progress + "%");
+          correspondingMedia.updateStatus("Uploading: " + event.progress + "%");
         }
-
+          
         if (event.eventId)
-          self.uploader.acknowledgeEvent(event.eventId);
+          this.uploader.acknowledgeEvent(event.eventId);
       });
     })
+
+    this.events.getUploadOptionsChange().subscribe(() =>  { this.loadUploadOptions() });
   }
 
-  private getMediaWithId(mediaId) {
-    for (var media of this.allMedia) {
-      if (media.id == mediaId) {
-        return media;
-      }
-    }
-    return null;
+  ngOnInit() {
+    this.loadUploadOptions();
   }
 
   cancelUpload(media: Media): void {
     this.uploader.removeUpload(media.id, res => {
-      console.log('removeUpload result: ', res);
       media.updateStatus("Aborted");
+      this.log("Upload: " + media.id + " aborted");
     }, err => alert('Error removing upload'));
   }
 
   openGallery(): void {
-    var self = this;
-
-    var options = {
-      width: 200,
-      quality: 25
-    };
-
-    self.imgPicker.getPictures({
+    this.imgPicker.getPictures({
       maximumImagesCount: 3
     }).then(file_uris => {
-      for (var i = 0; i < file_uris.length; i++) {
-        let path = this.win.Ionic.WebView.convertFileSrc(file_uris[i]);
-        var media = new Media(path, this._ngZone);
+      if(typeof file_uris == 'string') return;
+      file_uris.forEach(file_uri => {
+        const media = new Media(file_uri, this.webView.convertFileSrc(file_uri), this._ngZone);
         this.allMedia.push(media);
-
-        var options: any = {
-          serverUrl: "https://en7paaa03bwd.x.pipedream.net/",
-          filePath: file_uris[i],
-          fileKey: "file",
-          id: media.id,
-          notificationTitle: "Uploading image (Job 0)",
-          headers: {},
-          parameters: {
-            colors: 1,
-            faces: 1,
-            image_metadata: 1,
-            phash: 1,
-            signature: "924736486",
-            tags: "device_id_F13F74C5-4F03-B800-2F76D3C37B27",
-            timestamp: 1572858811,
-            type: "authenticated"
-          }
-        };
-        self.uploader.startUpload(options);
-      }
+        this.log("Upload: " + media.id + " added");
+      });
+      this.refreshRemainsMediaToUpload();
     }, err => console.log('err: ' + err));
   }
-}
 
-export class Media {
-
-  uri: String;
-  status: String;
-  zone: NgZone;
-  id: string;
-
-  constructor(url: String, private _ngZone: NgZone) {
-    this.uri = url;
-    this.status = "uploading";
-    this.zone = _ngZone;
-    this.id = "" + Math.random().toString(36).substr(2, 5);
+  startUpload(media: Media) {
+    const options: any = {
+      serverUrl: this.uploadOptions.serverUrl,
+      filePath: media.uri,
+      fileKey: this.uploadOptions.fileKey,
+      id: media.id,
+      notificationTitle: "Uploading image",
+      headers: this.getHeadersHash(this.uploadOptions.headers),
+      parameters: this.uploadOptions.parameters,
+      requestMethod: this.uploadOptions.requestMethod
+    };
+    this.uploader.startUpload(options);
+    media.updateStatus("Uploading...");
+    this.log("Upload: " + media.id + " start");
   }
 
-  updateStatus(stat: String) {
-    //in order to updates to propagate, we need be in angular zone
-    //more info here:
-    //https://www.joshmorony.com/understanding-zones-and-change-detection-in-ionic-2-angular-2/
-    //example where updates are made in angular zone:
-    //https://www.joshmorony.com/adding-background-geolocation-to-an-ionic-2-application/
-    this.zone.run(() => {
-      this.status = stat;
+  removeUpload(media: Media) {
+    this.allMedia = this.allMedia.filter(m => m.id != media.id);
+    this.refreshRemainsMediaToUpload();
+  }
+
+  async uploadAll() {
+    this.refreshRemainsMediaToUpload();
+    while(this.pendingMedia.length > 0) {
+      this.startUpload(this.pendingMedia.pop());
+      await this.sleep(400);
+    }
+  }
+
+  openSettings() {
+    this.navController.navigateForward('/settings');
+  }
+
+  private async loadUploadOptions() {
+    try {
+      const uploadOptions = await this.nativeStorage.getItem('upload_options');
+      if(uploadOptions) this.uploadOptions = uploadOptions;
+    }catch(error) {}
+  }
+
+  private getHeadersHash(headers: Options["headers"]) {
+    const headersHash = {};
+    headers.forEach(header => headersHash[header.key] = header.value)
+    return headersHash;
+  }
+
+  private getMediaWithId(mediaId) {
+    return this.allMedia.find(media => media.id == mediaId);
+  }
+
+  private refreshRemainsMediaToUpload() {
+    this.pendingMedia = this.allMedia.filter(media => !media.status);
+  }
+
+  private log(message: String) {
+    this._ngZone.run(() => {
+      this.logs.push(message);
+      setTimeout(() => {
+        this.logsContainer.nativeElement.scrollTop = this.logsContainer.nativeElement.scrollHeight;
+      },200)
     });
+  }
+
+  private async sleep(time) {
+    return new Promise((resolve,reject) => setTimeout(resolve, time))
   }
 }

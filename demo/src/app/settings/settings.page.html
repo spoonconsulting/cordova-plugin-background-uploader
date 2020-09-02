@@ -1,0 +1,47 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Settings</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button (click)="save()">Save</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+ <p class="text-bigger">Upload Target</p>
+ <ion-list>
+  <ion-item>
+    <ion-label position="floating">Server URL</ion-label>
+    <ion-input type="url" [(ngModel)]="options.serverUrl"></ion-input>
+  </ion-item>
+  <ion-item>
+   <ion-label position="floating">File Key (eg: image)</ion-label>
+   <ion-input [(ngModel)]="options.fileKey"></ion-input>
+  </ion-item>
+  <ion-radio-group [(ngModel)]="options.requestMethod">
+    <ion-list-header>
+      <ion-label>Request Method</ion-label>
+    </ion-list-header>
+    <ion-item>
+      <ion-label>POST</ion-label>
+      <ion-radio slot="start" value="POST"></ion-radio>
+    </ion-item>
+    <ion-item>
+      <ion-label>PUT</ion-label>
+      <ion-radio slot= "start" value="PUT"></ion-radio>
+    </ion-item>
+  </ion-radio-group>
+  <ion-item>
+    <ion-label>Headers</ion-label>
+    <ion-button (click)="addHeader()"> + </ion-button>
+  </ion-item>
+  <ion-item *ngFor="let header of options.headers">
+    <ion-input [(ngModel)]="header.key" placeholder="Key"></ion-input>
+    <ion-input [(ngModel)]="header.value" placeholder="value"></ion-input>
+    <ion-button color="danger" (click)="removeHeader(header.id)"> - </ion-button>
+  </ion-item>
+ </ion-list>
+</ion-content>

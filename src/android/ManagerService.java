@@ -154,8 +154,10 @@ public class ManagerService extends Service {
         long pendingUploadCount = PendingUpload.count(PendingUpload.class);
         if (pendingUploadCount == 0 && this.connectedPlugin == null) {
             Intent intent = new Intent(this, ManagerService.class);
-            this.requestObserver.unregister();
-            this.requestObserver = null;
+            if(this.requestObserver != null) {
+                this.requestObserver.unregister();
+                this.requestObserver = null;
+            }
             stopService(intent);
             return;
         }
@@ -211,11 +213,6 @@ public class ManagerService extends Service {
                     });
 
         }
-
-        JSONObject serviceState = new JSONObject(new HashMap() {{
-            put("state", "INITIALIZED");
-        }});
-        createAndSendEvent(serviceState);
 
         return START_NOT_STICKY;
     }

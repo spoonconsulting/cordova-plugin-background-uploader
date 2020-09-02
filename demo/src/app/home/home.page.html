@@ -1,22 +1,61 @@
 <ion-header [translucent]="true">
+  <ion-title>
+    File Uploader Sample
+  </ion-title>
   <ion-toolbar>
-    <ion-title>
-      File Uploader Sample
-    </ion-title>
-    <ion-buttons end> 
+    <ion-buttons slot="start"> 
       <ion-button color="primary" (click)="openGallery()"> Select Photos </ion-button> 
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button class="spr" color="primary" (click)="openSettings()"> Settings </ion-button>
     </ion-buttons> 
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-list>
-    <ion-item *ngFor="let media of allMedia">
-      <img [src]="media.uri" style="width: 50px; height:auto;" />
-      <div class="item-text-center item-text-wrap">
-          {{media.status}}
-      </div>
-      <ion-button color="danger" slot="end" (click)="cancelUpload(media)">Abort</ion-button>
-    </ion-item>
-  </ion-list>
+  <div class="content-heading">
+    <ion-button [disabled]="pendingMedia.length < 1" color="primary" (click)="uploadAll()">Start all</ion-button>
+  </div>
+  <div class="content-list">
+    <ion-list>
+      <ion-item *ngFor="let media of allMedia">
+        <div class="media-card">
+          <div class="thumbnail">
+            <img [src]="media.localUri" />
+          </div>
+          <div class="metadata">
+            <div class="status">
+              <span *ngIf="media.status">{{ media.status }}</span>
+            </div>
+            <div class="actions">
+              <ion-button
+                color="primary" 
+                (click)="startUpload(media)"
+              >
+                Start
+              </ion-button>
+              <ion-button
+                color="danger" 
+                (click)="cancelUpload(media)"
+              >
+                Cancel
+              </ion-button>
+              <ion-button
+                color="danger" 
+                (click)="removeUpload(media)"
+              >
+                Remove
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-item>
+    </ion-list>
+  </div>
 </ion-content>
+
+<div class="logs">
+  <div class="wrapper" #logs_container>
+    <div *ngFor="let log of logs" class="log">{{ log }}</div>
+  </div>
+</div>
