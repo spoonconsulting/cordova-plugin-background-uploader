@@ -37,6 +37,15 @@
             <feature name="NotificationHandler">
                 <param name="android-package" value="com.spoon.backgroundfileupload.NotificationHandler" />
             </feature>
+            <feature name="ExecutorSupplier">
+                <param name="android-package" value="com.spoon.backgroundfileupload.ExecutorSupplier" />
+            </feature>
+            <feature name="MainThreadExecutor">
+                <param name="android-package" value="com.spoon.backgroundfileupload.MainThreadExecutor" />
+            </feature>
+            <feature name="PriorityThreadFactory">
+                <param name="android-package" value="com.spoon.backgroundfileupload.PriorityThreadFactory" />
+            </feature>
         </config-file>
         <config-file target="AndroidManifest.xml" parent="/manifest">
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
