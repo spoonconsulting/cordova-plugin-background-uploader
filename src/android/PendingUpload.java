@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public class PendingUpload extends SugarRecord {
-    String uploadId;
-    String data;
+    public String uploadId;
+    public String data;
 
     public PendingUpload() {
     }

@@ -7,7 +7,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 public class UploadEvent extends SugarRecord {
-    String data;
+    private String data;
 
     public UploadEvent() {}
 

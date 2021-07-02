@@ -57,7 +57,7 @@ public class ManagerService extends Service {
     private GlobalRequestObserver requestObserver;
     private Long lastProgressTimestamp = 0L;
     private Activity mainActivity;
-    private IConnectedPlugin connectedPlugin;
+    public IConnectedPlugin connectedPlugin;
     private Disposable networkObservable;
     public boolean isNetworkAvailable = false;
     private boolean serviceIsRunning = false;

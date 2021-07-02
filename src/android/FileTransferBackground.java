@@ -21,37 +21,27 @@ public class FileTransferBackground extends CordovaPlugin implements ServiceConn
     private ManagerService managerService;
 
     @Override
-    public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        try {
-            if (action.equalsIgnoreCase("initManager")) {
-                this.initManager(args.get(0).toString(), callbackContext);
-                return true;
-            }
-
-            if (action.equalsIgnoreCase("destroy")) {
-                this.destroy();
-                callbackContext.success();
-                return true;
-            }
-
-            cordova.getThreadPool().execute(() -> {
-                try {
-                    if (action.equalsIgnoreCase("removeUpload")) {
-                        managerService.removeUpload(args.get(0).toString());
-                    } else if (action.equalsIgnoreCase("acknowledgeEvent")) {
-                        managerService.acknowledgeEvent(args.getString(0));
-                    } else if (action.equalsIgnoreCase("startUpload")) {
-                        managerService.addUpload((JSONObject) args.get(0));
-                    }
-                    callbackContext.success();
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                    callbackContext.error(exception.getMessage());
+    public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(() -> {
+            try {
+                if (action.equalsIgnoreCase("initManager")) {
+                    this.initManager(args.get(0).toString(), callbackContext);
+                    return;
+                } else if (action.equalsIgnoreCase("destroy")) {
+                    this.destroy();
+                } else if (action.equalsIgnoreCase("removeUpload")) {
+                    this.managerService.removeUpload(args.get(0).toString());
+                } else if (action.equalsIgnoreCase("acknowledgeEvent")) {
+                    this.managerService.acknowledgeEvent(args.getString(0));
+                } else if (action.equalsIgnoreCase("startUpload")) {
+                    this.managerService.addUpload((JSONObject) args.get(0));
                 }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+                callbackContext.success();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+                callbackContext.error(exception.getMessage());
+            }
+        });
         return true;
     }
 
